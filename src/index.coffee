@@ -2,18 +2,8 @@ _ = require("underscore")
 mongoose = require("mongoose")
 Schemaless = new mongoose.Schema({})
 
-class Mongobus
-  constructor: (@hostStr, options = {}) ->
-    @options = _.extend({}, @_defaultOpts, options)
-    @db = mongoose.connect(@hostStr, @options)
-  
-  _defaultOpts: {}
-  
-  channel: (@collectionName = "events") ->
-    @collection = mongoose.model(@collectionName, Schemaless, @collectionName)
-  
-  disconnect: () ->
-    @db.disconnect()
+class BusSchema
+  constructor: (@options = {}) ->
   
   wrapIncoming: (data) ->
     d = {}
@@ -24,18 +14,30 @@ class Mongobus
   
   wrapOutgoing: (data) ->
     return {d: data}
+
+class Mongobus
+  constructor: (@hostStr = "mongodb://localhost/test", options = {}) ->
+    @options = _.extend({}, @_defaultOpts, options)
+    @db = mongoose.connect(@hostStr, @options)
+    @schema = new BusSchema()
+  
+  _defaultOpts: {}
+  
+  channel: (@collectionName = "events") ->
+    @collection = mongoose.model(@collectionName, Schemaless, @collectionName)
+  
+  disconnect: () ->
+    @db.disconnect()
   
   subscribe: (query, callback) ->
     opts = {tailable: true}
-    @db.connection.collection(@collectionName).find(@wrapIncoming(query), opts, (err, cursor) ->
-      throw err if err
+    @db.connection.collection(@collectionName).find(@schema.wrapIncoming(query), opts, (err, cursor) ->
+      return callback(err) if err
       
-      cursor.each((err, doc) ->
-        callback(err, doc)
-      )
+      cursor.each(callback)
     )
   
   publish: (obj, callback) ->
-    @db.connection.collection(@collectionName).insert(@wrapOutgoing(obj), callback)
+    @db.connection.collection(@collectionName).insert(@schema.wrapOutgoing(obj), callback)
 
 module.exports = Mongobus
