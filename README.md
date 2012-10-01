@@ -20,3 +20,8 @@ Use:
     mbus.publish({signin: 1, ts: Date.now(), moredata: {x:1}}, function(err){
       // published
     })
+
+
+## Note
+
+Aggregations & Alerts have been removed until they can be properly ported from the other repos.
