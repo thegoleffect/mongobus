@@ -1,8 +1,6 @@
 _ = require("underscore")
 mongoose = require("mongoose")
-Schema = mongoose.Schema
-
-Event = new Schema({})
+Schemaless = new mongoose.Schema({})
 
 class Mongobus
   constructor: (@hostStr, options = {}) ->
@@ -12,32 +10,32 @@ class Mongobus
   _defaultOpts: {}
   
   channel: (@collectionName = "events") ->
-    @collection = mongoose.model(@collectionName, Event)
+    @collection = mongoose.model(@collectionName, Schemaless, @collectionName)
   
-  create: (@collectionName) ->
-    
+  disconnect: () ->
+    @db.disconnect()
   
-  subscribe: (query, options, callback) ->
-    if typeof options == "function"
-      callback = options
-      options = {}
-    
-  test: () ->
-    @collection.find({}, (err, docs) ->
+  wrapIncoming: (data) ->
+    d = {}
+    for key,value of data
+      d["d." + key] = value
+    console.log(d) if @options.debug == true
+    return d
+  
+  wrapOutgoing: (data) ->
+    return {d: data}
+  
+  subscribe: (query, callback) ->
+    opts = {tailable: true}
+    @db.connection.collection(@collectionName).find(@wrapIncoming(query), opts, (err, cursor) ->
       throw err if err
       
-      console.log(docs)
+      cursor.each((err, doc) ->
+        callback(err, doc)
+      )
     )
-    # console.log(@event)
-    # return @event
-    # @event.connection.find({}, (err, cursor) ->
-    #   throw err if err
-      
-    #   cursor.toArray((err, docs) ->
-    #     throw err if err
-        
-    #     console.log(docs)
-    #   )
-    # )
+  
+  publish: (obj, callback) ->
+    @db.connection.collection(@collectionName).insert(@wrapOutgoing(obj), callback)
 
 module.exports = Mongobus
