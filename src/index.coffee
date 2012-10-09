@@ -80,7 +80,15 @@ class Mongobus
     @db.connection.collection(collectionName).isCapped(callback)
   
   channel: (@collectionName = "events") ->
-    @collection = mongoose.model(@collectionName, Schemaless, @collectionName)
+    @collectionExists(@collectionName, (err, exists) =>
+      throw err || "Collection #{@collectionName} does not exist" if not exists or err
+      
+      @verifyCapped(@collectionName, (err, isCapped) =>
+        throw "Collection #{collectionName} is not capped" || err if not isCapped or err
+        
+        @collection = mongoose.model(@collectionName, Schemaless, @collectionName)
+      )
+    )
   
   disconnect: () ->
     @db.disconnect()
