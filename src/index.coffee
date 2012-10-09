@@ -51,7 +51,7 @@ class Mongobus
       @db.connection.db.createCollection(collectionName, options, (err, coll) =>
         return callback(err) if err and typeof callback == "function"
         
-        @index(collectionName, {_id:1}, {unique: 1, dropDups: 1}, callback)
+        @index({_id:1}, {unique: 1, dropDups: 1}, callback, collectionName, false)
       )
     )
   
@@ -62,10 +62,15 @@ class Mongobus
       @db.connection.collection(collectionName).drop(callback)
     )
   
-  index: (collectionName, query, options, callback) ->
+  index: (query, options, callback, collectionName = null, useSchema = true) ->
     return @delay(this, "index", arguments, 2000) if not @isConnected
+    collectionName = collectionName || @collectionName
     
-    # indexObject = _.extend({}, {_id: 1}, query)
+    if useSchema == true
+      indexObject = _.extend({}, {_id: 1}, @schema.wrapOutgoing(query))
+    else
+      indexObject = query
+    
     @db.connection.collection(collectionName).ensureIndex(indexObject, options, callback)
   
   
