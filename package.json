@@ -1,7 +1,7 @@
 {
   "name": "mongobus",
   "description": "MongoDB as a Message Bus",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "author": "Van Nguyen <thegoleffect@gmail.com>",
   "repository": "git://github.com/thegoleffect/mongobus",
   "main": "index",
