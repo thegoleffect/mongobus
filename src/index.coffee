@@ -45,7 +45,7 @@ class Mongobus
     return @delay(this, "create", arguments, 2000) if not @isConnected
       
     options = _.extend({}, @_defaultCreateOpts, opts)
-    @exists(collectionName, (err, exists) =>
+    @collectionExists(collectionName, (err, exists) =>
       return callback("collection already exists") if exists
       
       @db.connection.db.createCollection(collectionName, options, (err, coll) =>
@@ -55,14 +55,21 @@ class Mongobus
       )
     )
   
+  drop: (collectionName, callback) ->
+    @collectionExists(collectionName, (err, exists) =>
+      return callback(null, true) if not exists
+      
+      @db.connection.collection(collectionName).drop(callback)
+    )
+  
   index: (collectionName, query, options, callback) ->
     return @delay(this, "index", arguments, 2000) if not @isConnected
     
-    indexObject = _.extend({}, {_id: 1}, query)
+    # indexObject = _.extend({}, {_id: 1}, query)
     @db.connection.collection(collectionName).ensureIndex(indexObject, options, callback)
   
   
-  exists: (collectionName, callback) ->
+  collectionExists: (collectionName, callback) ->
     @db.connection.collection(collectionName).isCapped((err, status) ->
       return callback(err, true) if status == undefined
       return callback(err, false) if status == null
